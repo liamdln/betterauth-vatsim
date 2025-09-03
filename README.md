@@ -21,9 +21,13 @@ The web server will then be available at `http://localhost:3000`.
 
 ## How it Works
 
-A custom OAuth client is setup using the GenericOauth plugin from BetterAuth. This uses `mapProfileToUser` to fill in the session with VATSIM data as well as user data.
+A custom OAuth client is setup [here](/lib/auth.ts) using the GenericOauth plugin from BetterAuth. This uses `mapProfileToUser` to fill in the session with VATSIM data as well as user data.
 
 There is also an `additionalFields` object on the `user` object that declares additional fields for data passed by VATSIM. By default, only `name_full`, `cid`, and `email` are used.
 
-If you don't want to include all this data, you can remove it as needed.
+If you don't want to include all this data, you can remove it as needed. If you change the structure, you'll need to push your changes to the database by running the following:
 
+```shell
+npx @better-auth/cli generate # generates the auth schema - you may have to overwrite the old one
+npx drizzle-kit push # pushes the changes to the database - if you remove anything it will ask for additional information
+```
