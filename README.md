@@ -1,6 +1,8 @@
 # BetterAuth VATSIM Connect SSO
 
-This is an implementation of BetterAuth in Next.js 15 using VATSIM's Connect SSO.
+This is a basic implementation of BetterAuth in Next.js 15 using VATSIM's Connect SSO.
+
+More details about BetterAuth can be found in their [documentation](https://www.better-auth.com/docs/introduction). 
 
 ## Running
 
@@ -31,3 +33,20 @@ If you don't want to include all this data, you can remove it as needed. If you 
 npx @better-auth/cli generate # generates the auth schema - you may have to overwrite the old one
 npx drizzle-kit push # pushes the changes to the database - if you remove anything it will ask for additional information
 ```
+
+## Authenticating and Sessions
+
+### Server Side and Client Side Sessions
+
+An example of accessing the session both server side and client side can be found in the following files:
+
+- [Server Side](/app/page.tsx)
+- [Client Side](/components/client-side-session.tsx)
+
+### Login and Logout
+
+Examples of logging in and out can be found in the [auth-buttons component](/components/auth-buttons.tsx).
+
+## Extra Features
+
+BetterAuth offer a multitude of different features, including [integration guides with other frameworks](https://www.better-auth.com/docs/integrations/next) and using different [databases](https://www.better-auth.com/docs/adapters/mysql) and [adapters](https://www.better-auth.com/docs/adapters/drizzle).
