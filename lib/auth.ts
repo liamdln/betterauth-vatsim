@@ -63,7 +63,6 @@ export const auth = betterAuth({
                     redirectURI: `${process.env.BETTER_AUTH_URL!}/api/auth/oauth2/callback/vatsim`,
                     overrideUserInfo: true,
                     mapProfileToUser: async (profile) => {
-                        console.log(JSON.stringify(profile.data.personal.country.name))
                         return {
                             id: profile.data.cid,
                             name: profile.data.personal.name_full,

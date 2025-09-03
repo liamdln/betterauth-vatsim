@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BetterAuth VATSIM Connect SSO
 
-## Getting Started
+This is an implementation of BetterAuth in Next.js 15 using VATSIM's Connect SSO.
 
-First, run the development server:
+## Running
 
-```bash
+First you will need to initialise the database:
+
+1. Setup a MySQL database server (I recommend MySQL Docker) and create a database.
+2. Setup all the environment variables found in `.env.example` and place them in a file called `.env` in the same folder as `.env.example`.
+3. Run `npx drizzle-kit push` to push the auth schema to the database.
+
+Then run the following commands in the root folder of the Next.js project:
+
+```shell
+npm i
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The web server will then be available at `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How it Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+A custom OAuth client is setup using the GenericOauth plugin from BetterAuth. This uses `mapProfileToUser` to fill in the session with VATSIM data as well as user data.
 
-## Learn More
+There is also an `additionalFields` object on the `user` object that declares additional fields for data passed by VATSIM. By default, only `name_full`, `cid`, and `email` are used.
 
-To learn more about Next.js, take a look at the following resources:
+If you don't want to include all this data, you can remove it as needed.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
