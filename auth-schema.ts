@@ -4,6 +4,8 @@ import {
   text,
   timestamp,
   boolean,
+  int,
+  index,
 } from "drizzle-orm/mysql-core";
 
 export const user = mysqlTable("user", {
@@ -11,7 +13,7 @@ export const user = mysqlTable("user", {
   name: text("name").notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   emailVerified: boolean("email_verified")
-    .$defaultFn(() => false)
+    .$defaultFn(() => /* @__PURE__ */ false)
     .notNull(),
   image: text("image"),
   createdAt: timestamp("created_at")
@@ -20,6 +22,7 @@ export const user = mysqlTable("user", {
   updatedAt: timestamp("updated_at")
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
+  cid: int("cid"),
   country: text("country"),
   countryCode: text("country_code"),
   ratingShort: text("rating_short"),
@@ -45,7 +48,9 @@ export const session = mysqlTable("session", {
   userId: varchar("user_id", { length: 36 })
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-});
+}, (table) => [
+  index("session_user_id_idx").on(table.userId),
+]);
 
 export const account = mysqlTable("account", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -63,17 +68,19 @@ export const account = mysqlTable("account", {
   password: text("password"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
-});
+}, (table) => [
+  index("account_user_id_idx").on(table.userId),
+]);
 
 export const verification = mysqlTable("verification", {
   id: varchar("id", { length: 36 }).primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
-  updatedAt: timestamp("updated_at").$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .notNull(),
 });
