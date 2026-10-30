@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const vatsimDevOrigin = "https://auth-dev.vatsim.net";
 const devAccount = { username: "10000009", password: "10000009" };
+const expectedCid = Number(devAccount.username);
 
 test("logs in through VATSIM development SSO and logs out", async ({ page, baseURL }) => {
   const appOrigin = new URL(baseURL!).origin;
@@ -18,6 +19,7 @@ test("logs in through VATSIM development SSO and logs out", async ({ page, baseU
     ),
     page.getByRole("button", { name: "Login", exact: true }).click(),
   ]);
+  // Both 2xx success and 3xx OAuth redirects are valid; 4xx/5xx indicate errors.
   expect(
     providerResponse.status(),
     "VATSIM rejected the authorization request. Check the sandbox VATSIM_CLIENT_ID, " +
@@ -42,23 +44,23 @@ test("logs in through VATSIM development SSO and logs out", async ({ page, baseU
 
   await expect(page).toHaveURL(`${baseURL}/`);
   await expect(page.getByRole("button", { name: "Logout", exact: true })).toBeEnabled();
-  await expect(clientSession).toContainText('"cid":10000009');
-  await expect(serverSession).toContainText('"cid":10000009');
+  await expect(clientSession).toContainText(`"cid":${expectedCid}`);
+  await expect(serverSession).toContainText(`"cid":${expectedCid}`);
 
   // Use the browser's cookies to verify the actual server session, not just UI.
   const response = await page.request.get("/api/auth/get-session");
   expect(response.ok()).toBe(true);
   const session = await response.json();
   expect(session).toMatchObject({
-    user: { id: expect.any(String), cid: 10000009 },
+    user: { id: expect.any(String), cid: expectedCid },
     session: { userId: expect.any(String) },
   });
   expect(session.session.userId).toBe(session.user.id);
 
   await page.reload();
   await expect(page.getByRole("button", { name: "Logout", exact: true })).toBeEnabled();
-  await expect(clientSession).toContainText('"cid":10000009');
-  await expect(serverSession).toContainText('"cid":10000009');
+  await expect(clientSession).toContainText(`"cid":${expectedCid}`);
+  await expect(serverSession).toContainText(`"cid":${expectedCid}`);
 
   await page.getByRole("button", { name: "Logout", exact: true }).click();
   await expect(page.getByRole("button", { name: "Login", exact: true })).toBeEnabled();
