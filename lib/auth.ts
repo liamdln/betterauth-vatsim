@@ -9,7 +9,7 @@ import * as schema from "@/auth-schema";
  * See https://vatsim.dev/api/connect-api/get-user
  */
 interface VatsimUserDetails {
-    cid: number;
+    cid: string;
     personal: {
         name_full: string;
         email: string;
@@ -20,9 +20,22 @@ interface VatsimUserDetails {
         pilotrating: { short: string; long: string };
         region: { id: string; name: string };
         division: { id: string; name: string };
-        subdivision: { id: string; name: string };
+        subdivision: { id: string | null; name: string | null };
     };
 }
+
+const parseVatsimCid = (cid: string) => {
+    if (!/^\d+$/.test(cid)) {
+        throw new Error("VATSIM returned an invalid CID");
+    }
+
+    const numericCid = Number(cid);
+    if (!Number.isSafeInteger(numericCid)) {
+        throw new Error("VATSIM returned a CID outside the supported numeric range");
+    }
+
+    return numericCid;
+};
 
 const createAuth = async () =>
     betterAuth({
@@ -100,7 +113,7 @@ const createAuth = async () =>
                         mapProfileToUser: (profile) => {
                             const details = profile.data as VatsimUserDetails;
                             return {
-                                cid: details.cid,
+                                cid: parseVatsimCid(details.cid),
                                 name: details.personal.name_full,
                                 email: details.personal.email,
                                 emailVerified: true,
