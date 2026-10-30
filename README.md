@@ -42,6 +42,49 @@ pnpm dev
 
 The web server will then be available at `http://localhost:3000`.
 
+## Testing login
+
+The Playwright end-to-end test uses the real VATSIM development service at
+`https://auth-dev.vatsim.net` with sandbox username `10000009` and password
+`10000009`. It checks the login redirect, optional OAuth consent, the authenticated
+client and server sessions, session persistence after reload, and logout.
+
+First complete the database, environment, and schema steps above. The OAuth client
+must be registered on the VATSIM sandbox with the callback URL
+`http://localhost:3000/api/auth/callback/vatsim`. Then run:
+
+```shell
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
+
+The test starts and stops its own Next.js development server on port 3000, so stop
+any existing server on that port first. It forces `VATSIM_AUTH_URL` to the development
+service and `BETTER_AUTH_URL` to `http://localhost:3000` for that server, regardless
+of their values in `.env`. Your configured database must be running with the auth
+schema applied; the test creates or updates the sandbox user's local account.
+It requires internet access and valid sandbox OAuth client credentials; it does
+not mock VATSIM or skip failures when prerequisites are missing.
+
+Run `pnpm test:e2e --headed` to watch the browser. Failure screenshots and traces
+are saved under the ignored `test-results/` directory.
+If VATSIM returns `invalid_client`, check that the client ID and secret belong to
+the development service and that its registered callback URL matches the URL above.
+
+### GitHub Actions
+
+The [test workflow](.github/workflows/tests.yml) runs on pull requests,
+pushes to `main`, and manual dispatches. It provisions a fresh MySQL 8.4 service,
+applies the auth schema, runs lint and a production build, installs Chromium, and
+runs the login test. Failed runs retain Playwright diagnostics for seven days.
+
+Configure the repository's Actions secrets `VATSIM_CLIENT_ID` and
+`VATSIM_CLIENT_SECRET` with a development OAuth client registered for
+`http://localhost:3000/api/auth/callback/vatsim`. The workflow generates a temporary
+`BETTER_AUTH_SECRET` for each run. Pull requests from forks skip this job because
+GitHub does not provide repository secrets to them. The login test uses the real
+VATSIM development service, so provider outages can cause failures.
+
 ## How it Works
 
 A custom OAuth client is setup [here](/lib/auth.ts) using the GenericOauth plugin from BetterAuth. This uses `mapProfileToUser` to fill in the session with VATSIM data as well as user data.

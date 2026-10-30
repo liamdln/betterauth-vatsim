@@ -1,0 +1,100 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and VATSIM login
+    # Fork pull requests do not receive the sandbox OAuth client secrets.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: betterauth_vatsim
+          MYSQL_USER: betterauth
+          MYSQL_PASSWORD: betterauth
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      CI: "true"
+      DATABASE_URL: mysql://betterauth:betterauth@127.0.0.1:3306/betterauth_vatsim
+      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_TELEMETRY: "0"
+      NEXT_TELEMETRY_DISABLED: "1"
+      VATSIM_AUTH_URL: https://auth-dev.vatsim.net
+      VATSIM_CLIENT_ID: ${{ secrets.VATSIM_CLIENT_ID }}
+      VATSIM_CLIENT_SECRET: ${{ secrets.VATSIM_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.11.2
+          cache: true
+
+      - name: Check sandbox credentials
+        run: |
+          if [ -z "$VATSIM_CLIENT_ID" ] || [ -z "$VATSIM_CLIENT_SECRET" ]; then
+            echo "::error::Set the VATSIM_CLIENT_ID and VATSIM_CLIENT_SECRET repository Actions secrets to a VATSIM sandbox OAuth client."
+            exit 1
+          fi
+
+      - name: Generate temporary auth secret
+        run: |
+          auth_secret=$(openssl rand -hex 32)
+          echo "::add-mask::$auth_secret"
+          echo "BETTER_AUTH_SECRET=$auth_secret" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Apply auth schema
+        run: pnpm db:push
+
+      - name: Build
+        run: pnpm build
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Test login
+        run: pnpm test:e2e
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
